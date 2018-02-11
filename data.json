@@ -1,0 +1,109 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "name": "HaplotypeCallerERC",
+      "input": ["GATK", "RefFasta", "RefIndex", "RefDict", "sampleName", "bamFile", "bamIndex"],
+      "command": "java -jar ${GATK} -T HaplotypeCaller -ERC GVCF -R ${RefFasta} -I ${bamFile} -o ${sampleName}_rawLikelihoods.g.vcf",
+      "output": "GVCF"
+    },
+    {
+      "id": 2,
+      "name": "GenotypeGVCFs",
+      "input": ["GATK", "RefFasta", "RefIndex", "RefDict", "sampleName", "GVCF"],
+      "command": "java -jar ${GATK} -T GenotypeGVCFs -R ${RefFasta} -V ${sep=' -V ' GVCFs} -o ${sampleName}_rawVariants.vcf",
+      "output": "rawVCF"
+    },
+    {
+      "id": 3,
+      "name": "haplotypeCaller",
+      "input": ["GATK", "RefFasta", "RefIndex", "RefDict", "sampleName", "bamFile", "bamIndex"],
+      "command": "java -jar ${GATK} -T HaplotypeCaller -R ${RefFasta} -I ${inputBAM} -o ${sampleName}.raw.indels.snps.vcf",
+      "output": "rawVCF"
+    },
+    {
+      "id": 4,
+      "name": "select",
+      "input": ["GATK", "RefFasta", "RefIndex", "RefDict", "sampleName", "type","rawVCF"],
+      "command": "java -jar ${GATK} -T SelectVariants -R ${RefFasta} -V ${rawVCF} -selectType ${type} -o ${sampleName}_raw.${type}.vcf",
+      "output": "rawSubset"
+    },
+    {
+      "id": 5,
+      "name": "selectSNPs",
+      "input": ["GATK", "RefFasta", "RefIndex", "RefDict", "sampleName", "type","rawVCF"],
+      "command": "java -jar ${GATK} -T SelectVariants -R ${RefFasta} -V ${rawVCF} -selectType ${type} -o ${sampleName}_raw.${type}.vcf",
+      "output": "rawVCF"
+    },
+    {
+      "id": 6,
+      "name": "hardFilterSNP",
+      "input": ["sampleName", "RefFasta", "GATK", "RefIndex", "RefDict", "rawSNPs"],
+      "command": "java -jar ${GATK} -T VariantFiltration -R ${RefFasta} -V ${rawSNPs} --filterExpression 'FS > 60.0' --filterName 'snp_filter' -o ${sampleName}.filtered.snps.vcf",
+      "output": "filteredSNPs"
+    },
+    {
+      "id": 7,
+      "name": "selectIndels",
+      "input": ["GATK", "RefFasta", "RefIndex", "RefDict", "sampleName", "type","rawVCF"],
+      "command": "java -jar ${GATK} -T SelectVariants -R ${RefFasta} -V ${rawVCF} -selectType ${type} -o ${sampleName}_raw.${type}.vcf",
+      "output": "rawVCF"
+    },
+    {
+      "id": 8,
+      "name": "hardFilterIndel",
+      "input": ["sampleName", "RefFasta", "GATK", "RefIndex", "RefDict", "rawSNPs"],
+      "command": "java -jar ${GATK} -T VariantFiltration -R ${RefFasta} -V ${rawSNPs} --filterExpression 'FS > 60.0' --filterName 'snp_filter' -o ${sampleName}.filtered.indel.vcf",
+      "output": "filteredIndels"
+    },
+    {
+      "id": 9,
+      "name": "combine",
+      "input": ["GATK", "RefFasta", "RefIndex", "RefDict", "sampleName", "filteredSNPs","filteredIndels"],
+      "command": "java -jar ${GATK} -T CombineVariants -R ${RefFasta} -V ${filteredSNPs} -V ${filteredIndels} --genotypemergeoption UNSORTED -o ${sampleName}.filtered.snps.indels.vcf",
+      "output": "filteredVCF"
+    }
+  ],
+  "connections": [
+    {
+      "id": 12,
+      "from": 1,
+      "to": 2
+    },
+    {
+      "id":34,
+      "from": 3,
+      "to": 4
+    },
+    {
+      "id": 35,
+      "from": 3,
+      "to": 5
+    },
+    {
+      "id": 37,
+      "from": 3,
+      "to": 7
+    },
+    {
+      "id": 56,
+      "from": 5,
+      "to": 6
+    },
+    {
+      "id": 78,
+      "from": 7,
+      "to": 8
+    },
+    {
+      "id": 69,
+      "from": 6,
+      "to": 9
+    },
+    {
+      "id": 89,
+      "from": 8,
+      "to": 9
+    }
+  ]
+}
