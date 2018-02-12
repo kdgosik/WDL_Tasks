@@ -15,6 +15,13 @@ const {
 //   {id:'3', name:'Sarah Williams', email: 'swilliams@email.com', age: 30},
 // ];
 
+const BASE_URL = 'http://localhost:3000'
+
+function getTaskByURL(relativeURL) {
+  return axios.get(`${BASE_URL}${relativeURL}`)
+    .then(res => res.data);
+}
+
 // CustomerType
 const TaskType = new GraphQLObjectType({
   name:'Task',
@@ -27,27 +34,8 @@ const TaskType = new GraphQLObjectType({
     connections: {
       type: GraphQLList(TaskType),
       description: "Finding related tasks",
-      resolve(args){
-        let out = [];
-        let conn = axios.get('http://localhost:3000/connections')
-        .then(res => res.data)
-        .then(function(result){
-          for(let i = 0; i < result.length; i++){
-            if(result[i].from == args.id){
-              axios.get('http://localhost:3000/tasks/'+result[i].to)
-              .then(res => res.data)
-              .then(function(o){
-                out.push(o)
-                console.log(out) // correct response
-              });
-            }
-          }
-          console.log(conn) // Promise{ <pending> }
-          console.log(out) // []
-      })
-
+      resolve:(task) => task.connections.map(getTaskByURL)
     }
-  }
   })
 });
 
@@ -67,11 +55,7 @@ const RootQuery = new GraphQLObjectType({
     },
     tasks: {
       type: new GraphQLList(TaskType),
-      resolve(parentValue, args){
-        //return customers;
-        return axios.get('http://localhost:3000/tasks/')
-          .then(res => res.data);
-      }
+      resolve: (root, args) => getTaskByURL('/tasks/${args.id}/')
     }
   }
 });

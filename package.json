@@ -2,9 +2,9 @@
   "name": "wdltasks",
   "version": "0.0.1",
   "description": "Simple Graphql Server",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "dev:server": "nodemon server_index.js",
+    "dev:server": "nodemon server.js",
     "json:server": "json-server --watch data.json"
   },
   "author": "Kirk Gosik",
