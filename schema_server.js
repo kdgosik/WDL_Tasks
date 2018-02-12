@@ -24,7 +24,30 @@ const TaskType = new GraphQLObjectType({
     input: {type: GraphQLList(GraphQLString)},
     command: {type: GraphQLString},
     output: {type: GraphQLString},
-    connections: {type: GraphQLList(GraphQLString)},
+    connections: {
+      type: GraphQLList(TaskType),
+      description: "Finding related tasks",
+      resolve(args){
+        let out = [];
+        let conn = axios.get('http://localhost:3000/connections')
+        .then(res => res.data)
+        .then(function(result){
+          for(let i = 0; i < result.length; i++){
+            if(result[i].from == args.id){
+              axios.get('http://localhost:3000/tasks/'+result[i].to)
+              .then(res => res.data)
+              .then(function(o){
+                out.push(o)
+                console.log(out)
+              });
+            }
+          }
+          console.log(conn) // Promise{ <pending> }
+          console.log(out)
+      })
+
+    }
+  }
   })
 });
 
@@ -38,14 +61,6 @@ const RootQuery = new GraphQLObjectType({
         id:{type: GraphQLInt}
       },
       resolve(parentValue, args){
-        // For hard coded data
-        /*
-        for(let i = 0; i < customers.length; i++){
-          if(customers[i].id == args.id){
-           return customers[i];
-           }
-         }
-         */
         return axios.get('http://localhost:3000/tasks/'+args.id)
           .then(res => res.data);
       }
