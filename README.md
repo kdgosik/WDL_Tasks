@@ -22,7 +22,7 @@ In a different terminal, we will start the graphiql server.  This will run on lo
 npm run dev:server
 ```
 
-Navigate to [localhost:4000/graphql](localhost:4000/graphql) where you can execute queries.  Here is an example one to get started.
+Navigate to <a href="http://localhost:4000/graphql">http://localhost:4000/graphql</a> where you can execute queries.  Here is an example one to get started.
 
 ```
 {
