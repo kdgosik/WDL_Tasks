@@ -1,0 +1,274 @@
+
+# RNA editing analysis pipeline
+# Omar
+
+task gzip_caller {
+  File R1
+  File R2
+  String filename
+  Int disk_size
+  String mem_size
+  String path
+  command {
+  	gzip -d ${R1} && \
+    gzip -d ${R2} && \
+    /src/sub_sample.sh ${path}/${filename}_R1_001.fastq ${path}/${filename}_R2_001.fastq 50000000
+    
+  }
+
+  runtime {
+    docker: "oabudayyeh/rnaediting"
+    cpu: "1"
+    memory: mem_size 
+    disks: "local-disk " + disk_size + " HDD"
+    zones: "us-west1-b us-east1-d"
+  }
+
+  output {
+    File R1_out = "${path}/${filename}_R1_001.fastq"
+    File R2_out = "${path}/${filename}_R2_001.fastq"
+    File reads_out = "${path}/${filename}_R1_001.fastq.reads"
+  }
+}
+
+
+task RSEM_caller {
+  File R1
+  File R2
+  Array[File] refs
+  String ref_folder
+  String file_name
+  Int disk_size
+  String mem_size
+
+  command {
+  	mkdir rsem_out && \
+  	rsem-calculate-expression -p 50 --output-genome-bam \
+    --append-names \
+    --paired-end \
+    ${R1} \
+    ${R2} \
+    ${ref_folder}/human_with_luc_refseq_ \
+    rsem_out/${file_name}
+
+  }
+
+
+
+  runtime {
+    docker: "oabudayyeh/rnaediting"
+    cpu: "50"
+    memory: mem_size 
+    disks: "local-disk " + disk_size + " HDD" 
+    zones: "us-west1-b us-east1-d"
+  }
+
+  output {
+    File output_bam = "rsem_out/${file_name}.genome.bam"
+    File genes_out = "rsem_out/${file_name}.genes.results"
+    File iso_out = "rsem_out/${file_name}.isoforms.results"
+  }
+}
+
+
+task samtools_sort_index {
+  File input_bam
+  String sub_strip_path = "gs://.*/"
+  String sub_strip_suffix = ".bam"
+  String base = sub(sub(input_bam, sub_strip_path, ""), sub_strip_suffix, ".sorted.bam")
+    Int disk_size
+  String mem_size
+  command {
+    samtools sort -@ 8 ${input_bam} -o ${base} && \
+    samtools flagstat ${base}
+    #samtools index ${base} ${base}.bai
+  }
+
+  runtime {
+    docker: "oabudayyeh/rnaediting"
+    cpu: "8"
+    memory: mem_size 
+    disks: "local-disk " + disk_size + " HDD"
+    zones: "us-west1-b us-east1-d"
+  }
+
+  output {
+    File samtools_bam = "${base}"
+    #File samtools_index = "${base}.bai"
+  }
+}
+
+task reditools {
+  File input_bam
+  File gff_file
+  File gff_index
+  #File input_index
+  File redi_ref
+  Array[File] excludes
+  String exc_folder
+  String chromo 
+  String sub_strip_path = "gs://.*/"
+  String sub_strip_suffix = ".genome.sorted.bam"
+  String base = sub(sub(input_bam, sub_strip_path, ""), sub_strip_suffix, "")
+    Int disk_size_redi
+  String mem_size_redi
+  command {
+    python2.7 /src/REDItoolDenovo.py -i ${input_bam} -f ${redi_ref} -o redi_${base}_${chromo} -k ${exc_folder}/${chromo}.txt -G ${gff_file} -t 8 -e -d -l -U AG -p -u -m20 -T6-0 -W -v 1 -n 0.0
+  }
+
+  runtime {
+    docker: "oabudayyeh/rnaediting"
+    cpu: "8"
+    memory: mem_size_redi 
+    disks: "local-disk " + disk_size_redi + " HDD"
+    zones: "us-west1-b us-east1-d"
+  }
+
+  output {
+    File output_sig = "redi_${base}_${chromo}/denovo_0/outTableSig_0"
+    File output_table = "redi_${base}_${chromo}/denovo_0/outTable_0"
+    File output_param = "redi_${base}_${chromo}/denovo_0/parameters.txt"
+    File output_subs = "redi_${base}_${chromo}/denovo_0/outSubs_0"
+  }
+}
+
+task combine_redi {
+  Array[File] redifiles
+  Array[File] redifiles_tab
+  String sample_basename
+  Int disk_size
+  String mem_size
+  
+  command {
+    cat ${sep=" " redifiles} > ${sample_basename}_all_sig.txt && \
+    cat ${sep=" " redifiles_tab} > ${sample_basename}_all_table.txt
+  }
+
+  runtime {
+    docker: "oabudayyeh/rnaediting"
+    cpu: "1"
+    memory: mem_size
+    disks: "local-disk " + disk_size + " HDD"
+    zones: "us-west1-b us-east1-d"
+  }
+
+  output {
+    File redioutput = "${sample_basename}_all_sig.txt"
+    File redioutput_tab = "${sample_basename}_all_table.txt"
+  }
+}
+
+
+
+# WORKFLOW DEFINITION 
+workflow RNA_editing {
+  File R1
+  File R2
+  Array[File] refs = ["gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.1.ebwt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.2.ebwt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.3.ebwt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.4.ebwt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.chrlist",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.grp",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.gtf",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.idx.fa",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.n2g.idx.fa",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.rev.1.ebwt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.rev.2.ebwt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.seq",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.ti",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref/human_with_luc_refseq_.transcripts.fa"]
+  
+  File redi_ref = "gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/GCF_000001405.34_GRCh38.p8_genomic.primary_assembly_with_pab40_luciferase.fna"
+  String ref_folder = "fc-5d6f9631-3037-4b0f-8396-a65636982afc/160902_with_luc/ref"
+	File chr_list = "gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/refseq_chr.txt"
+    Array[Object] chrs = read_objects(chr_list)
+    String exc_folder = "fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude"
+    Array[File] excludes = ["gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/EXT_01.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/EXT_02.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000001.11.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000002.12.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000003.12.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000004.12.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000005.10.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000006.12.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000007.14.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000008.11.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000009.12.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000010.11.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000011.10.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000012.12.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000013.11.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000014.9.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000015.10.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000016.10.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000017.11.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000018.10.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000019.10.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000020.11.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000021.9.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000022.11.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000023.11.txt",
+"gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/exclude/NC_000024.10.txt"]
+   String sub_strip_path = "gs://.*/"
+   String sub_strip_suffix = "_R1_001.fastq.gz"
+   String sample_basename = sub(sub(R1, sub_strip_path, ""), sub_strip_suffix, "")
+   
+   String gzip_path = "fc-5d6f9631-3037-4b0f-8396-a65636982afc/data/171013_10ng_v1_v2_runs_1-6"
+   
+   File gff_file ="gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/GCF_000001405.34_GRCh38.p8_genomic_with_luciferase_copy_clean.sorted.gff.gz"
+   File gff_index ="gs://fc-5d6f9631-3037-4b0f-8396-a65636982afc/GCF_000001405.34_GRCh38.p8_genomic_with_luciferase_copy_clean.sorted.gff.gz.tbi"
+   
+   call gzip_caller {
+   input: 
+   R1 = R1,
+   R2 = R2,
+   filename = sample_basename,
+   path = gzip_path
+   }
+   
+   call RSEM_caller {
+   input:
+   R1 = gzip_caller.R1_out,
+   R2 = gzip_caller.R2_out,
+   refs = refs,
+   file_name = sample_basename,
+   ref_folder = ref_folder
+  }
+  
+  call samtools_sort_index {
+   input:
+   input_bam = RSEM_caller.output_bam
+  }
+
+	scatter (c in chrs){
+	call reditools {
+   input:
+   input_bam = samtools_sort_index.samtools_bam,
+   #input_index = samtools_sort_index.samtools_index,
+   gff_file = gff_file,
+   gff_index = gff_index,
+   redi_ref = redi_ref,
+   chromo = c.chr,
+   excludes=excludes,
+   exc_folder = exc_folder
+  }
+  }
+  
+  
+   call combine_redi {
+   input:
+   redifiles = reditools.output_sig,
+   redifiles_tab = reditools.output_table,
+   sample_basename = sample_basename
+  }
+  # Outputs that will be retained when execution is complete
+  output {
+    File output_bam = RSEM_caller.output_bam
+    File output_redi = combine_redi.redioutput
+    File output_redi_tab = combine_redi.redioutput_tab
+    File genes_out = RSEM_caller.genes_out
+    File iso_out = RSEM_caller.iso_out
+    
+  }
+}

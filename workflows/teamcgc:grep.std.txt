@@ -1,0 +1,21 @@
+task grep {
+  
+  String pattern
+  File in_file
+
+  command {
+    grep '${pattern}' ${in_file}
+  }
+  
+  runtime {
+    docker : "ubuntu:latest"
+  }
+
+  output {
+    File response = stdout()
+  }
+}
+
+workflow test {
+  call grep
+}

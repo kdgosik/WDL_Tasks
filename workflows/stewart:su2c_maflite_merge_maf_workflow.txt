@@ -1,0 +1,111 @@
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Am2_maflite/versions/3/plain-WDL/descriptor" as m2
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Astrelka_maflite/versions/1/plain-WDL/descriptor" as strelka1
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Asvaba_maflite/versions/4/plain-WDL/descriptor" as svaba
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Amerge_su2c_maflites/versions/2/plain-WDL/descriptor" as merge
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Amaflite_oncotate_workflow/versions/5/plain-WDL/descriptor" as oncotator
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Atrim_maf_fields/versions/2/plain-WDL/descriptor" as trim
+
+
+workflow maflite_merge_maf_workflow {
+  
+    String pair_id
+    String tumor_id
+    String normal_id
+    String tumor_bam
+    String normal_bam
+    File Production_maf
+    File M2_vcf_file
+    File Strelka_SNV_vcf_file
+    File Strelka_INDEL_vcf_file
+    File svaba_INDEL_vcf_file
+    String output_disk_gb 
+    File interval_list
+    File oncoDBTarBall
+    File RemoveFieldsList
+
+    call m2.m2_maflite {
+      input:
+        pair_id = pair_id,
+        tumor_id = tumor_id,
+        normal_id = normal_id,
+        M2_vcf_file = M2_vcf_file,
+        output_disk_gb = output_disk_gb
+    }
+
+    call strelka1.strelka_maflite {
+      input:
+        pair_id = pair_id,
+        tumor_id = tumor_id,
+        normal_id = normal_id,
+        Strelka_SNV_vcf_file = Strelka_SNV_vcf_file,
+        Strelka_INDEL_vcf_file = Strelka_INDEL_vcf_file,
+        output_disk_gb = output_disk_gb
+    }     
+
+    call svaba.svaba_maflite {
+      input:
+        pair_id = pair_id,
+        tumor_id = tumor_id,
+        normal_id = normal_id,
+        tumor_bam = tumor_bam,
+        normal_bam = normal_bam,
+        svaba_INDEL_vcf_file = svaba_INDEL_vcf_file,
+        MAX_NORMAL_ALT_COUNT = "2",
+        output_disk_gb = output_disk_gb
+    }        
+ 
+     call merge.merge_su2c_maflites {
+      input:
+        ID = pair_id,
+        TUMOR_BARCODE = tumor_id,
+        NORMAL_BARCODE = normal_id,
+        PRODUCTION_MAF = PRODUCTION_MAF,
+        M2_MAFLITE = m2_maflite.m2_maflite,
+        STRELKA_MAFLITE = strelka_maflite.Strelka_maf,
+        SVABA_MAFLITE = svaba_maflite.svaba_maflite
+    }  
+    
+
+    call oncotator.subset_tsv_by_intervallist {
+      input:
+        ID = pair_id,
+        interval_list = interval_list,
+        input_tsv_file = merge_su2c_maflites.merge_tsv,
+        CHROMOSOME_FIELD = "chr",
+        POSITION_FIELD = "start",
+        preemptible_tries=4,
+        output_disk_gb = output_disk_gb,
+        boot_disk_gb = "10"
+    }
+        
+    call oncotator.oncotator_minimal {
+      input:
+        oncoDBTarBall = oncoDBTarBall,
+        IN = subset_tsv_by_intervallist.subset_tsv,
+        id = pair_id,
+        preemptible_tries=4,
+        output_disk_gb = output_disk_gb,
+        boot_disk_gb = "10"
+    }
+    
+            
+    call trim.trim_maf_fields {
+      input:
+        pair_id = pair_id,
+        InputMAF = oncotator_minimal.oncotated_maf,
+        RemoveFieldsList = RemoveFieldsList,
+        output_disk_gb = output_disk_gb
+    }
+    
+    
+    output {
+        merge_su2c_maflites.subset_tarball
+        m2_maflite.m2_maflite
+        strelka_maflite.Strelka_maf
+        svaba_maflite.svaba_maflite
+        merge_su2c_maflites.merge_tsv
+        oncotator_minimal.oncotated_maf
+        trim_maf_fields.trimmed_maf
+    }
+    
+}

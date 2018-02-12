@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "message": "Methods Repository entity jakec/CollectMultipleMetrics/1 not found.",
+  "timestamp": 1518463543724
+}

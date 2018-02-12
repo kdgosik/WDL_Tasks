@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "message": "Methods Repository entity broadinstitute_cga/lego_plotter/1 not found.",
+  "timestamp": 1518463450459
+}

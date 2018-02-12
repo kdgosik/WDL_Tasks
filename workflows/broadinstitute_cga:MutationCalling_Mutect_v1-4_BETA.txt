@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "message": "Methods Repository entity broadinstitute_cga/MutationCalling_Mutect_v1-4_BETA/1 not found.",
+  "timestamp": 1518463384104
+}

@@ -15,7 +15,7 @@ const {
 //   {id:'3', name:'Sarah Williams', email: 'swilliams@email.com', age: 30},
 // ];
 
-const BASE_URL = 'http://localhost:3000'
+const BASE_URL = 'http://localhost:5000'
 
 function getTaskByURL(relativeURL) {
   return axios.get(`${BASE_URL}${relativeURL}`)
@@ -49,13 +49,13 @@ const RootQuery = new GraphQLObjectType({
         id:{type: GraphQLInt}
       },
       resolve(parentValue, args){
-        return axios.get('http://localhost:3000/tasks/'+args.id)
+        return axios.get('http://localhost:5000/tasks/'+args.id)
           .then(res => res.data);
       }
     },
-    tasks: {
+    allTasks: {
       type: new GraphQLList(TaskType),
-      resolve: (root, args) => getTaskByURL('/tasks/${args.id}/')
+      resolve: () => getTaskByURL('/tasks/')
     }
   }
 });
@@ -73,7 +73,7 @@ const mutation = new GraphQLObjectType({
         output: {type: new GraphQLNonNull(GraphQLString)},
       },
       resolve(parentValue, args){
-        return axios.post('http://localhost:3000/tasks', {
+        return axios.post('http://localhost:5000/tasks', {
           name: args.name,
           input: args.input,
           command: args.command,

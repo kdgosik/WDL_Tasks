@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "message": "Methods Repository entity gatk/HaplotypeCallerGvcfScatter/1 not found.",
+  "timestamp": 1518463452603
+}

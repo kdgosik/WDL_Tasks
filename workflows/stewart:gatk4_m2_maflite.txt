@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "message": "Methods Repository entity stewart/gatk4_m2_maflite/1 not found.",
+  "timestamp": 1518463457057
+}

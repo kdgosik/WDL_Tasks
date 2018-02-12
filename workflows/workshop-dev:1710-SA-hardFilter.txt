@@ -1,0 +1,163 @@
+workflow hardFilter {
+	String gatk_path
+	File refFasta
+	File refIndex
+	File refDict
+	String name
+
+	call HaplotypeCaller { 
+		input: sampleName=name, 
+			refFasta=refFasta, 
+			gatk_path=gatk_path, 
+			refIndex=refIndex, 
+			refDict=refDict
+	}
+	call select as selectSNPs { 
+		input: type="SNP",
+			rawVCF=HaplotypeCaller.rawVCF,
+			sampleName=name, 
+			refFasta=refFasta, 
+			gatk_path=gatk_path, 
+			refIndex=refIndex, 
+			refDict=refDict
+		}
+	call select as selectIndels { 
+		input: type="INDEL",
+			rawVCF=HaplotypeCaller.rawVCF,
+			sampleName=name, 
+			refFasta=refFasta, 
+			gatk_path=gatk_path, 
+			refIndex=refIndex, 
+			refDict=refDict
+	}
+	call hardFilterSNP { 
+		input: rawSNPs=selectSNPs.rawSubset,
+			sampleName=name, 
+			refFasta=refFasta, 
+			gatk_path=gatk_path, 
+			refIndex=refIndex, 
+			refDict=refDict
+	}
+	call hardFilterIndel { 
+		input: rawIndels=selectIndels.rawSubset,
+			sampleName=name, 
+			refFasta=refFasta, 
+			gatk_path=gatk_path, 
+			refIndex=refIndex, 
+			refDict=refDict
+	}
+	call combine { 
+		input: filteredSNPs=hardFilterSNP.filteredSNPs,
+			filteredIndels=hardFilterIndel.filteredIndels,
+			sampleName=name, 
+			refFasta=refFasta, 
+			gatk_path=gatk_path, 
+			refIndex=refIndex, 
+			refDict=refDict
+	}
+}
+
+task HaplotypeCaller {
+	File gatk_path
+	File refFasta
+	String sampleName
+	File inputBAM
+	File refIndex
+	File refDict
+	File bamIndex
+	command {
+		java -jar ${gatk_path} \
+			-T HaplotypeCaller \
+			-R ${refFasta} \
+			-I ${inputBAM} \
+			-o ${sampleName}.raw.indels.snps.vcf
+	}
+	output {
+		File rawVCF = "${sampleName}.raw.indels.snps.vcf"
+	}
+}
+
+task select {
+	File gatk_path
+	File refFasta
+	File refIndex 
+	File refDict
+	String sampleName
+	String type
+	File rawVCF
+	command {
+		java -jar ${gatk_path} \
+			-T SelectVariants \
+			-R ${refFasta} \
+			-V ${rawVCF} \
+			-selectType ${type} \
+			-o ${sampleName}_raw.${type}.vcf
+	}
+	output {
+		File rawSubset = "${sampleName}_raw.${type}.vcf"
+	}
+}
+
+task hardFilterSNP {
+	File gatk_path
+	File refFasta
+	File refIndex 
+	File refDict
+	String sampleName
+	File rawSNPs
+	command {
+		java -jar ${gatk_path} \
+			-T VariantFiltration \
+			-R ${refFasta} \
+			-V ${rawSNPs} \
+			--filterExpression "FS > 60.0" \
+			--filterName "snp_filter" \
+			-o ${sampleName}.filtered.snps.vcf
+	}
+	output {
+		File filteredSNPs = "${sampleName}.filtered.snps.vcf"
+	}
+}
+
+task hardFilterIndel {
+	File gatk_path
+	File refFasta
+	File refIndex 
+	File refDict
+	String sampleName
+	File rawIndels
+	command {
+		java -jar ${gatk_path} \
+			-T VariantFiltration \
+			-R ${refFasta} \
+			-V ${rawIndels} \
+			--filterExpression "FS > 200.0" \
+			--filterName "indel_filter" \
+			-o ${sampleName}.filtered.indels.vcf
+	}
+	output {
+		File filteredIndels = "${sampleName}.filtered.indels.vcf"
+	}
+}
+
+task combine {
+	File gatk_path
+	File refFasta
+	File refIndex 
+	File refDict
+	String sampleName
+	File filteredSNPs
+	File filteredIndels
+	command {
+		java -jar ${gatk_path} \
+			-T CombineVariants \
+			-R ${refFasta} \
+			-V ${filteredSNPs} \
+			-V ${filteredIndels} \
+			--genotypemergeoption UNSORTED \
+			-o ${sampleName}.filtered.snps.indels.vcf
+	}
+	output {
+		File filteredVCF = "${sampleName}.filtered.snps.indels.vcf"
+	}
+}

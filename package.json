@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "dev:server": "nodemon server.js",
-    "json:server": "json-server --watch data.json"
+    "json:server": "json-server --watch data.json --port 5000"
   },
   "author": "Kirk Gosik",
   "license": "MIT",

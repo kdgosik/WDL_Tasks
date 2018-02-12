@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "message": "Methods Repository entity mburger/crisprseq/1 not found.",
+  "timestamp": 1518463461476
+}

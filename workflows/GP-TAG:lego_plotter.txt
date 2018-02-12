@@ -1,0 +1,113 @@
+task extractSNPs {
+    File input_file
+    String file_type
+    String output_prefix
+    Int? mem
+    Int? disk_space_gb
+    Int? preemptible_attempts
+
+    command <<<
+        FILE_TYPE=`echo ${file_type} | tr /a-z/ /A-Z/`
+
+        if [[ $FILE_TYPE == "MAF" ]]; then
+            awk -F "\t" '{ if ($1 ~ /^#/ || $1 ~ "Hugo" || $10 == "SNP"){print $0} }' ${input_file} > ${output_prefix}.snp
+
+        elif [[ $FILE_TYPE == "VCF" ]]; then
+            awk -F "\t" '{ if ($1 ~ /^#/ || (length($4) == 1 && length($5) == 1)){print $0} }' ${input_file} > ${output_prefix}.snp
+
+        else
+            touch ${output_prefix}.snp
+        fi
+    >>>
+    runtime {
+        docker: "jnktsj/lego_plotter:1"
+        memory: select_first([mem, 2]) + " GB"
+        disks: "local-disk " + select_first([disk_space_gb, 10]) + " HDD"
+        preemptiple: select_first([preemptible_attempts, 2])
+    }
+    output {
+        File output_file = "${output_prefix}.snp"
+    }
+}
+
+
+task generateLegoPlot {
+    File input_file
+    String file_type
+    String output_prefix
+    File? ref_fasta
+    Float? allele_fraction
+    String? filtering_args
+    String? tumor_col_name
+    String? judge_col_name
+    Int? mem
+    Int? disk_space_gb
+    Int? preemptible_attempts
+
+    command <<<
+        FILE_TYPE=`echo ${file_type} | tr /A-Z/ /a-z/`
+
+        python /usr/src/legoPlotter.py --muts ${input_file} \
+                                       --fileType $FILE_TYPE \
+                                       --basename ${output_prefix} \
+                                       ${"--reference " + ref_fasta} \
+                                       ${"--afCut " + allele_fraction} \
+                                       ${"--tumorColName " + tumor_col_name} \
+                                       ${"--judgeColName " + judge_col_name} \
+                                       ${default=" " filtering_args}
+    >>>
+    runtime {
+        docker: "jnktsj/lego_plotter:1"
+        memory: select_first([mem, 7]) + " GB"
+        disks: "local-disk " + select_first([disk_space_gb, 10]) + " HDD"
+        preemptiple: select_first([preemptible_attempts, 2])
+    }
+    output {
+        File lego_plot = "${output_prefix}.pdf"
+    }
+}
+
+
+workflow LegoPlotter {
+    File input_file
+    String file_type
+    String output_prefix
+
+    File? ref_fasta
+    Float? allele_fraction
+    String? filtering_args
+    String? tumor_col_name
+    String? judge_col_name
+
+    # run parameters
+    Int? mem
+    Int? disk_space_gb
+    Int? preemptible_attempts
+
+    call extractSNPs {
+        input: input_file = input_file,
+               file_type = file_type,
+               output_prefix = output_prefix,
+               mem = mem,
+               disk_space_gb = disk_space_gb,
+               preemptible_attempts = preemptible_attempts
+    }
+
+    call generateLegoPlot {
+        input: input_file = extractSNPs.output_file,
+               file_type = file_type,
+               output_prefix = output_prefix,
+               ref_fasta = ref_fasta,
+               allele_fraction = allele_fraction,
+               filtering_args = filtering_args,
+               tumor_col_name = tumor_col_name,
+               judge_col_name = judge_col_name,
+               mem = mem,
+               disk_space_gb = disk_space_gb,
+               preemptible_attempts = preemptible_attempts
+    }
+
+    output {
+        File lego_plot = generateLegoPlot.lego_plot
+    }
+}

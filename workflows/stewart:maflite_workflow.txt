@@ -1,0 +1,51 @@
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Am1_maflite/versions/1/plain-WDL/descriptor" as m1
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Am2_maflite/versions/3/plain-WDL/descriptor" as m2
+import "https://api.firecloud.org/ga4gh/v1/tools/stewart%3Astrelka_maflite/versions/1/plain-WDL/descriptor" as strelka
+workflow maflite_workflow {
+  
+    String pair_id
+    String tumor_id
+    String normal_id
+    File M1_maflite_inputfile
+    File M2_vcf_file
+    File Strelka_SNV_vcf_file
+    File Strelka_INDEL_vcf_file
+    String output_disk_gb 
+
+
+    call m1.m1_maflite {
+      input:
+        pair_id = pair_id,
+        tumor_id = tumor_id,
+        normal_id = normal_id,
+        M1_maflite_inputfile = M1_maflite_inputfile,
+        output_disk_gb = output_disk_gb
+    }
+
+    call m2.m2_maflite {
+      input:
+        pair_id = pair_id,
+        tumor_id = tumor_id,
+        normal_id = normal_id,
+        M2_vcf_file = M2_vcf_file,
+        output_disk_gb = output_disk_gb
+    }
+
+    call strelka.strelka_maflite {
+      input:
+        pair_id = pair_id,
+        tumor_id = tumor_id,
+        normal_id = normal_id,
+        Strelka_SNV_vcf_file = Strelka_SNV_vcf_file,
+        Strelka_INDEL_vcf_file = Strelka_INDEL_vcf_file,
+        output_disk_gb = output_disk_gb
+    }
+        
+ 
+    output {
+        m1_maflite.m1_maflite_fix
+        m2_maflite.m2_maflite
+        strelka_maflite.Strelka_maf
+    }
+    
+}

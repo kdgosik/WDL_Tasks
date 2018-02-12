@@ -1,0 +1,274 @@
+workflow breakpointer_workflow {
+        call breakpointer
+}
+
+task breakpointer {
+
+        #Define workflow parameters within the task
+        String pairID="sample"
+        File bam_tumor
+        File bam_normal
+        File bam_tumor_index
+        File bam_normal_index
+        File refdata1
+        File forBP_txt
+        File forBP_mat
+        File tisz
+        File nisz
+    
+        String output_disk_gb
+        String boot_disk_gb = "10"
+        String ram_gb
+        String cpu_cores
+
+
+    command {
+python_cmd="
+import subprocess
+def run(cmd):
+    print(cmd)
+    subprocess.check_call(cmd,shell=True)
+
+run('ln -sTf `pwd` /opt/execution')
+run('ln -sTf `pwd`/../inputs /opt/inputs')
+run('/opt/src/algutil/monitor_start.py')
+
+# start task-specific calls
+##########################
+
+#copy wdl args to python vars
+bam_tumor = '${bam_tumor}'
+bam_tumor_index = '${bam_tumor_index}'
+bam_normal = '${bam_normal}'
+bam_normal_index = '${bam_normal_index}'
+refdata1='${refdata1}'
+forBP_txt='${forBP_txt}'
+forBP_mat='${forBP_mat}'
+tisz='${tisz}'
+nisz='${nisz}'
+
+
+import os
+import sys
+import tarfile
+import shutil
+
+
+pairID='sample'
+
+#define the pipeline
+PIPELINE='/opt/src/pipelines/breakpointer_pipeline.py'
+
+#define the directory for the pipette server to allow the pipette pipelines to run
+PIPETTE_SERVER_DIR='/opt/src/algutil/pipette_server'
+
+#define the location of the directory for communication data
+cwd = os.getcwd()
+COMMDIR=os.path.join(cwd,'pipette_status')
+OUTDIR=os.path.join(cwd,'pipette_jobs')
+REFDIR = os.path.join(cwd,'refdata')
+INPUTS=os.path.join(cwd,'inputs')
+OUTFILES = os.path.join(cwd,'output_files')
+
+if os.path.exists(COMMDIR):
+    shutil.rmtree(COMMDIR)
+os.mkdir(COMMDIR)
+
+if not os.path.exists(INPUTS):
+    os.mkdir(INPUTS)
+if not os.path.exists(OUTFILES):
+    os.mkdir(OUTFILES)
+
+if not os.path.exists(REFDIR):
+    os.mkdir(REFDIR)
+    # unpack reference files
+    run('tar xvf %s -C %s'%(refdata1,REFDIR))
+
+#colocate the indexes with the bams via symlinks
+TUMOR_BAM = os.path.join(INPUTS,'tumor.bam')
+TUMOR_INDEX = os.path.join(INPUTS,'tumor.bam.bai')
+NORMAL_BAM = os.path.join(INPUTS,'normal.bam')
+NORMAL_INDEX = os.path.join(INPUTS,'normal.bam.bai')
+if not os.path.exists(TUMOR_BAM):
+    os.link(bam_tumor,TUMOR_BAM)
+    os.link(bam_tumor_index,TUMOR_INDEX)
+    os.link(bam_normal,NORMAL_BAM)
+    os.link(bam_normal_index,NORMAL_INDEX)
+FORBP_TXT = os.path.join(INPUTS,'forBP.txt')
+FORBP_MAT = os.path.join(INPUTS,'forBP.mat')
+TISZ = os.path.join(INPUTS,'tumor.isz')
+NISZ = os.path.join(INPUTS,'normal.isz')
+if not os.path.exists(FORBP_TXT):
+    os.link(forBP_txt,FORBP_TXT)
+    os.link(forBP_mat,FORBP_MAT)
+    os.link(tisz,TISZ)
+    os.link(nisz,NISZ)
+
+
+#run the pipette synchronous runner to process the test data
+cmd_str = 'python3 %s/pipetteSynchronousRunner.py %s %s %s %s %s %s %s %s %s %s %s %s %s'%(
+    PIPETTE_SERVER_DIR,COMMDIR,OUTDIR,PIPELINE,COMMDIR,OUTDIR,pairID,TUMOR_BAM,NORMAL_BAM,FORBP_TXT,FORBP_MAT,TISZ,NISZ,REFDIR)
+
+pipeline_return_code = subprocess.call(cmd_str,shell=True)
+
+# capture module usage
+mufn = 'pipette.module.usage.txt'
+mus = []
+for root, dirs, files in os.walk(OUTDIR):
+    if mufn in files:
+        fid = open(os.path.join(root,mufn))
+        usageheader = fid.readline()
+        usage = fid.readline()
+        mus.append(usage)
+mus.sort()
+# output usage for failures to stdout
+for line in mus:
+    if 'FAIL' in line:
+        sys.stderr.write (line)
+# tar up failing modules
+with tarfile.open('failing_intermediates.tar','w') as tar:
+    for line in mus:
+        line_list = line.split()
+        if line_list[0] == 'FAIL':
+            module_outdir = line_list[2]
+            tar.add(module_outdir)
+
+
+# write full file to output
+fid = open(os.path.join(OUTFILES,'%s.summary.usage.txt'%pairID),'w')
+fid.write(usageheader)
+fid.writelines(mus)
+fid.close()
+
+def make_links(subpaths, new_names=None):
+    for i,subpath in enumerate(subpaths):
+        if not os.path.exists(subpath):
+            sys.stderr.write ('file not found: %s'%subpath)
+            continue
+        if new_names:
+            fn = new_names[i]
+        else:
+            fn = os.path.basename(subpath)
+        new_path = os.path.join(OUTFILES,fn)
+        if os.path.exists(new_path):
+            sys.stderr.write('file already exists: %s'%new_path)
+            continue
+        os.link(subpath,new_path)
+
+def make_archive(subpaths,archive_name):
+    archive_path = os.path.join(OUTFILES,archive_name)
+    with tarfile.open(archive_path,'w') as tar:
+        for subpath in subpaths:
+            if not os.path.exists(subpath):
+                sys.stderr.write ('file not found: %s'%subpath)
+            else:
+                tar.add(subpath)
+
+
+
+subpaths = [
+        'pipette_jobs/hello/outfile.txt'
+        ]
+make_links(subpaths)
+
+subpaths = [
+        'pipette_jobs/tabix_dRanger/sample.broad-breakpointer.DATECODE.somatic.sv.vcf.gz',
+        'pipette_jobs/tabix_dRanger/sample.broad-breakpointer.DATECODE.somatic.sv.vcf.gz.tbi',
+        'pipette_jobs/links_for_broad/dRanger2VCF/sample.dRanger_results.detail.txt.gz'
+    ]
+
+new_names = [
+        'sample.broad-breakpointer.DATECODE.somatic.sv.vcf.gz',
+        'sample.broad-breakpointer.DATECODE.somatic.sv.vcf.gz.tbi',
+        'sample.broad-breakpointer.DATECODE.somatic.sv.detail.txt.gz'
+    ]
+make_links(subpaths, new_names)
+
+
+subpaths = ['pipette_jobs/links_for_broad/BreakPointer_Normal_sg_gather/sample.breakpoints.txt.gz',
+        'pipette_jobs/links_for_broad/BreakPointer_Normal_sg_gather/sample.matched.sam.gz',
+        'pipette_jobs/links_for_broad/BreakPointer_Tumor_sg_gather/sample.breakpoints.txt.gz',
+        'pipette_jobs/links_for_broad/BreakPointer_Tumor_sg_gather/sample.matched.sam.gz',
+        'pipette_jobs/links_for_broad/dRanger2VCF/sample.dRanger_results.detail.txt.gz',
+        'pipette_jobs/links_for_broad/dRanger_Finalize/sample.dRanger_results.detail.all.mat.gz',
+        'pipette_jobs/links_for_broad/dRanger_Finalize/sample.dRanger_results.detail.all.txt.gz',
+        'pipette_jobs/links_for_broad/dRanger_Finalize/sample.dRanger_results.detail.somatic.txt.gz',
+        'pipette_jobs/links_for_broad/dRanger_Finalize/sample.dRanger_results.somatic.txt.gz',
+        'pipette_jobs/links_for_broad/getdRangerSupportingReads_Tumor/sample.dRanger.all_reads.txt.gz',
+        'pipette_jobs/links_for_broad/getdRangerSupportingReads_Normal/sample.dRanger.all_reads.txt.gz']
+make_archive(subpaths,'breakpointer_intermediates.tar')
+
+
+
+
+
+
+#########################
+# end task-specific calls
+run('/opt/src/algutil/monitor_stop.py')
+print('\n######\n')
+print(os.getcwd())
+dirs = sorted(os.listdir( '.' ))
+for f1 in dirs:
+   print f1
+
+#os.link('../monitor_stop.log','monitor_stop.log')
+"
+        echo "$python_cmd"
+        python -c "$python_cmd"
+
+
+    }
+
+        parameter_meta{
+
+                pairID: "The ID of the pair of bam files that are analyzed"
+                bam_tumor: "The tumor genome sample analyzed in the pipeline"
+                bam_normal: "The normal genome sample analyzed in the pipeline"
+                bam_tumor_index: "The bam file index for the tumor sample bam file"
+                bam_normal_index: "The bam file index for the normal sample bam file"
+                forBP_txt: "List of sites for BP to evaluate in dRanger.details.txt format"
+                forBP_mat: "List of sites for BP to evaluate in dRanger matlab format"
+                tisz: "Distribution of fragement lengths for tumor bam"
+                nisz: "Distribution of fragement lengths for normal bam"
+                refdata1: "tar.gz file of reference data"
+                diskSize: "The size of the disk allocated to the root directory, which can be changed to accomodate the size of the bam files used"
+        }
+
+        output {
+
+        #usage
+        File summary_usage="output_files/sample.summary.usage.txt"
+        File dstat_log="dstat.log"
+        File dstat_full_log="dstat_full.log"
+        File monitor_start_log="monitor_start.log"
+        File monitor_stop_log="monitor_stop.log"
+
+        File failing_intermediates="failing_intermediates.tar"
+
+        File breakpointer_intermediates_tar="output_files/breakpointer_intermediates.tar"
+        File sample_broad_breakpointer_DATECODE_somatic_sv_vcf_gz="output_files/sample.broad-breakpointer.DATECODE.somatic.sv.vcf.gz"
+        File sample_broad_breakpointer_DATECODE_somatic_sv_vcf_gz_tbi="output_files/sample.broad-breakpointer.DATECODE.somatic.sv.vcf.gz.tbi"
+        File sample_broad_breakpointer_DATECODE_somatic_sv_somatic_sv_detail_txt_gz="output_files/sample.broad-breakpointer.DATECODE.somatic.sv.detail.txt.gz"
+
+
+
+        }
+
+        runtime {
+
+        docker : "docker.io/chipstewart/breakpointer:1"
+        memory: "${ram_gb}GB"
+        cpu: "${cpu_cores}"
+        disks: "local-disk ${output_disk_gb} HDD"
+        bootDiskSizeGb: "${boot_disk_gb}"
+        preemptible: 1
+        }
+
+        meta {
+                author : "Gordon Saksena"
+                email : "gsaksena@broadinstitute.org"
+        }
+
+}
+

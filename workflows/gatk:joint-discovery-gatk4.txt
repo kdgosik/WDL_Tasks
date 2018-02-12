@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "message": "Methods Repository entity gatk/joint-discovery-gatk4/1 not found.",
+  "timestamp": 1518463451087
+}
