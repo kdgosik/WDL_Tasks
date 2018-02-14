@@ -1,0 +1,83 @@
+// input_tsv (inputSampleFile)
+SampleID  fastqFiles
+samp1  [fastq1, fastq2, ...]
+samp2  [fastq1, fastq2, ...]
+samp3  [fastq1, fastq2, ...]
+
+
+
+// starting workflow
+workflow jointCellRangerCount {
+
+  File inputSampleFile
+  Array[Array[File]] inputSamples = read_tsv(inputSampleFile)
+  File transcriptomeTarGz
+  Boolean? secondary
+  Int? expectCells
+  String diskSpace
+
+  scatter (sample in inputSamples) {
+    call CellRanger {
+        input:
+        sampleId = sample[0],
+        fastqs = sample[1],
+        transcriptomeTarGz = transcriptomeTarGz,
+        secondary = secondary,
+        expectCells = expectCells,
+        diskSpace = diskSpace
+        }
+    }
+}
+
+
+task CellRanger {
+    String sampleId
+    Array[File] fastqs
+    File transcriptomeTarGz
+    Int? expectCells
+    Boolean? secondary
+    String diskSpace
+
+    command {
+        set -e
+        mkdir transcriptome_dir
+        tar xf ${transcriptomeTarGz} -C transcriptome_dir --strip-components 1
+        ln -s /usr/bin/python3 python
+        export PATH=$PATH:.
+        python <<CODE
+        import os
+        from subprocess import call
+        dirs = dict()
+        for f in ["${sep='","' fastqs}"]:
+            dirs.setdefault(os.path.dirname(f), True)
+        expect_cells = '${expectCells}'
+        secondary = '${secondary}'
+        call_args = list()
+        call_args.append('cellranger')
+        call_args.append('count')
+        call_args.append('--jobmode=local')
+        call_args.append('--transcriptome=transcriptome_dir')
+        call_args.append('--id=' + '${sampleId}')
+        call_args.append('--fastqs=' + ','.join(list(dirs.keys())))
+        if secondary is not 'true':
+            call_args.append('--nosecondary')
+        if expect_cells is not '':
+            call_args.append('--expect-cells=' + str(expect_cells))
+        call(call_args)
+        CODE
+        tar czf ${sampleId}.tgz ${sampleId}
+        }
+
+    output {
+        File out = "${sampleId}.tgz"
+    }
+
+    runtime {
+        docker: "regevlab/cellranger-2.0.2"
+        memory: "416 GB"
+        bootDiskSizeGb: 12
+        disks: "local-disk ${diskSpace} HDD"
+        cpu: 64
+        preemptible: 2
+    }
+}
