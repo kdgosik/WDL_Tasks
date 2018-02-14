@@ -8,41 +8,61 @@ const {
   GraphQLNonNull
 } = require('graphql');
 
-// Hardcoded Data
-// const customers = [
-//   {id:'1', name:'John Doe', email: 'jdoe@email.com', age: 35},
-//   {id:'2', name:'Steve Smith', email: 'ssmith@email.com', age: 25},
-//   {id:'3', name:'Sarah Williams', email: 'swilliams@email.com', age: 30},
-// ];
 
+// This is where json-server is servinb
 const BASE_URL = 'http://localhost:5000'
 
-function getTaskByURL(relativeURL) {
+function getByURL(relativeURL) {
   return axios.get(`${BASE_URL}${relativeURL}`)
     .then(res => res.data);
 }
 
-// CustomerType
+// Defining Input Type
+const InputType = new GraphQLObjectType({
+  name:'Input',
+  fields:() => ({
+    id: {type: GraphQLInt},
+    name: {type: GraphQLString},
+    type: {type: GraphQLString}
+  })
+});
+
+
+// Defining TaskType
 const TaskType = new GraphQLObjectType({
   name:'Task',
   fields:() => ({
     id: {type: GraphQLInt},
     name: {type: GraphQLString},
-    input: {type: GraphQLList(GraphQLString)},
+    inputs: {
+      type: GraphQLList(InputType),
+      description: " Identifying inputs",
+      resolve:(task) => task.inputs.map(getByURL)
+    },
     command: {type: GraphQLString},
     output: {type: GraphQLString},
     connections: {
       type: GraphQLList(TaskType),
       description: "Finding related tasks",
-      resolve:(task) => task.connections.map(getTaskByURL)
+      resolve:(task) => task.connections.map(getByURL)
     }
   })
 });
 
 // Root Query
-const RootQuery = new GraphQLObjectType({
-  name: 'RootQueryType',
+const query = new GraphQLObjectType({
+  name: 'Query',
   fields: {
+    inputs: {
+      type: InputType,
+      args: {
+        id:{type: GraphQLInt}
+      },
+      resolve(parentValue, args){
+        return axios.get('http://localhost:5000/inputs/'+args.id)
+          .then(res => res.data);
+      }
+    },
     task: {
       type: TaskType,
       args: {
@@ -52,6 +72,10 @@ const RootQuery = new GraphQLObjectType({
         return axios.get('http://localhost:5000/tasks/'+args.id)
           .then(res => res.data);
       }
+    },
+    allInputs: {
+      type: new GraphQLList(TaskType),
+      resolve: () => getTaskByURL('/inputs/')
     },
     allTasks: {
       type: new GraphQLList(TaskType),
@@ -86,6 +110,6 @@ const mutation = new GraphQLObjectType({
 });
 
 module.exports = new GraphQLSchema({
-  query: RootQuery,
+  query,
   mutation
 });
