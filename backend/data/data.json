@@ -1,57 +1,57 @@
 {
   "inputs": [
     {
-      "id": 1,
+      "id": "1",
       "name": "GATK",
       "type": "File"
     },
     {
-      "id": 2,
+      "id": "2",
       "name": "RefFasta",
       "type": "File"
     },
     {
-      "id": 3,
+      "id": "3",
       "name": "RefIndex",
       "type": "File"
     },
     {
-      "id": 4,
+      "id": "4",
       "name": "RefDict",
       "type": "File"
     },
     {
-      "id": 5,
+      "id": "5",
       "name": "sampleName",
       "type": "String"
     },
     {
-      "id": 6,
+      "id": "6",
       "name": "bamFile",
       "type": "File"
     },
     {
-      "id": 7,
+      "id": "7",
       "name": "bamIndex",
       "type": "File"
     },
     {
-      "id": 8,
+      "id": "8",
       "name": "GVCF",
       "type": "File"
     },
     {
-      "id": 9,
+      "id": "9",
       "name": "rawVCF",
       "type": "File"
     },
     {
-      "id": 10,
+      "id": "10",
       "name": "type",
       "type": "String"
     },
     {
-      "id": 11,
+      "id": "11",
       "name": "rawSubset",
       "type": "File"
     }
@@ -59,7 +59,7 @@
   ],
   "tasks": [
     {
-      "id": 1,
+      "id": "1",
       "name": "HaplotypeCallerERC",
       "inputs": ["/inputs/1", "/inputs/2", "/inputs/3", "/inputs/4", "/inputs/5", "/inputs/6", "/inputs/7"],
       "command": "java -jar ${GATK} -T HaplotypeCaller -ERC GVCF -R ${RefFasta} -I ${bamFile} -o ${sampleName}_rawLikelihoods.g.vcf",
@@ -67,7 +67,7 @@
       "connections": ["/tasks/2"]
     },
     {
-      "id": 2,
+      "id": "2",
       "name": "GenotypeGVCFs",
       "inputs": ["/inputs/1", "/inputs/2", "/inputs/3", "/inputs/4", "/inputs/5", "/inputs/8"],
       "command": "java -jar ${GATK} -T GenotypeGVCFs -R ${RefFasta} -V ${sep=' -V ' GVCFs} -o ${sampleName}_rawVariants.vcf",
@@ -75,7 +75,7 @@
       "connections": []
     },
     {
-      "id": 3,
+      "id": "3",
       "name": "haplotypeCaller",
       "inputs": ["/inputs/1", "/inputs/2", "/inputs/3", "/inputs/4", "/inputs/5", "/inputs/6", "/inputs/7"],
       "command": "java -jar ${GATK} -T HaplotypeCaller -R ${RefFasta} -I ${inputBAM} -o ${sampleName}.raw.indels.snps.vcf",
@@ -83,7 +83,7 @@
       "connections": ["/tasks/4"]
     },
     {
-      "id": 4,
+      "id": "4",
       "name": "select",
       "inputs": ["/inputs/1", "/inputs/2", "/inputs/3", "/inputs/4", "/inputs/5", "/inputs/10", "/inputs/8"],
       "command": "java -jar ${GATK} -T SelectVariants -R ${RefFasta} -V ${rawVCF} -selectType ${type} -o ${sampleName}_raw.${type}.vcf",
@@ -91,7 +91,7 @@
       "connections": ["/tasks/6"]
     },
     {
-      "id": 5,
+      "id": "5",
       "name": "hardFilter",
       "inputs": ["/inputs/5", "/inputs/2", "/inputs/1", "/inputs/3", "/inputs/4", "/inputs/11"],
       "command": "java -jar ${GATK} -T VariantFiltration -R ${RefFasta} -V ${rawSNPs} --filterExpression 'FS > 60.0' --filterName 'snp_filter' -o ${sampleName}.filtered.snps.vcf",
@@ -99,7 +99,7 @@
       "connections": ["/tasks/6"]
     },
     {
-      "id": 6,
+      "id": "6",
       "name": "combine",
       "inputs": ["/inputs/1", "/inputs/2", "/inputs/3", "/inputs/4", "/inputs/5", "/inputs/11", "/inputs/11"],
       "command": "java -jar ${GATK} -T CombineVariants -R ${RefFasta} -V ${filteredSNPs} -V ${filteredIndels} --genotypemergeoption UNSORTED -o ${sampleName}.filtered.snps.indels.vcf",

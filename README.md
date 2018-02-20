@@ -1,6 +1,6 @@
 # WDL_Tasks
 
-## install
+## Install
 
 Install the necessary node modules
 
@@ -27,7 +27,7 @@ Navigate to <a href="http://localhost:4000/graphql">http://localhost:4000/graphq
 
 ```
 {
-  task(id: 3){
+  task(id: "3"){
     id
     name
     input
