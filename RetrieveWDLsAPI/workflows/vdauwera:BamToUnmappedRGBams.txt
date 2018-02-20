@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity vdauwera/BamToUnmappedRGBams/1 not found.",
-  "timestamp": 1518463551065
-}

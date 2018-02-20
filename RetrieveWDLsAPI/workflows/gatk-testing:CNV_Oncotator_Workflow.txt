@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity gatk-testing/CNV_Oncotator_Workflow/1 not found.",
-  "timestamp": 1518463545298
-}

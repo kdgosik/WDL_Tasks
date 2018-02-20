@@ -2,28 +2,57 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strings"
+//	"encoding/json"
 )
 
 func main() {
 
-	fmt.Println("-----------------------------------")
-	fmt.Println("Start of Program")
+	tool_urls := getToolsURL()
+	wf := getWorkflow(tool_urls[0])
+	w := workflowToSlice(wf)
 
-	f1, err := ioutil.ReadFile("../RetrieveWDLsAPI/workflows/alex_methods_new4:redact_me_brad.txt")
+	s := strings.Join(w, " ")
+
+	// using regex to find task components
+	task := findWDLComponent(s, `task (\w+)`)
+	input := findWDLComponent(s, `{(.*?) command `)
+	command := findWDLComponent(s, `command {(.*?)} (output|runtime|meta)`)
+	output := findWDLComponent(s, `output {(.*?)}`)
+	meta := findWDLComponent(s, `meta {(.*?)}`)
+	runtime := findWDLComponent(s, `runtime {(.*?)}`)
+
+	fmt.Println("task: ", task)
+	fmt.Println("inputs: ", input)
+	fmt.Println("command: ", command)
+	fmt.Println("output: ", output)
+	fmt.Println("meta: ", meta)
+	fmt.Println("runtime: ", runtime)
+
+
+	/*
+	inputs_out, err := json.Marshal(inputs)
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println(string(inputs_out))
 
-	s := string(f1)
-	w := strings.FieldsFunc(s, func(r rune) bool {
-		switch r {
-		case '\n', '\t', ' ':
-			return true
-		}
-		return false
-	})
-	fmt.Printf("%q\n", w)
-	fmt.Println(w)
+	fmt.Println("--------------------------------")
+	fmt.Println("--------------------------------")
+	fmt.Println("--------------------------------")
+	// still need to incorpate a loop for multiple tasks in a workflow
+	out := Task{}
+	out.Id = rand.Int()
+	out.Name = task[0]
+	out.Inputs = input
+	out.Command = command[0]
+	out.Output = output[0]
+
+	out1, err := json.Marshal(out)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(out1))
+
+*/
 }

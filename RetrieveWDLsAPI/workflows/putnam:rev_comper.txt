@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity putnam/rev_comper/1 not found.",
-  "timestamp": 1518463377409
-}

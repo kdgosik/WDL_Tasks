@@ -13,6 +13,7 @@ npm install --save
 We will need two terminals to run this.  There are two parts that need ports to run.  The first is a simple json server that creates a json database on localhost:3000.  To do this by the json-server package. The package.json file has a script to do this by typing the following command.
 
 ```
+cd backend
 npm run json:server
 ```
 

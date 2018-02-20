@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity stewart/wgs_pip_m1_fragcounter_oxoq_1/1 not found.",
-  "timestamp": 1518463365091
-}

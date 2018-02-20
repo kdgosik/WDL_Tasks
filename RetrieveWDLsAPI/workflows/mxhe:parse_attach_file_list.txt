@@ -1,7 +1,0 @@
-workflow parse_attach_file_list {
-    File file_listing
-
-    output {
-        Array[File] files = read_lines(file_listing)
-    }
-}

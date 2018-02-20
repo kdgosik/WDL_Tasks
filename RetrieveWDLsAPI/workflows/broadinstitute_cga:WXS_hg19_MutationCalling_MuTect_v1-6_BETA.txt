@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity broadinstitute_cga/WXS_hg19_MutationCalling_MuTect_v1-6_BETA/1 not found.",
-  "timestamp": 1518463363850
-}

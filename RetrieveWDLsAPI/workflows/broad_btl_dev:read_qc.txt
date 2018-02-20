@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity broad_btl_dev/read_qc/1 not found.",
-  "timestamp": 1518463378028
-}

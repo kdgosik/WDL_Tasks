@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity stewart/svaba_maflite/1 not found.",
-  "timestamp": 1518463368546
-}

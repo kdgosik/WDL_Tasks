@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity birger/print_runtime_env/1 not found.",
-  "timestamp": 1518463378729
-}

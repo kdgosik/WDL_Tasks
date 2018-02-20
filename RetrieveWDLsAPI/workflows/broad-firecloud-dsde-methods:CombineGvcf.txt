@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity broad-firecloud-dsde-methods/CombineGvcf/1 not found.",
-  "timestamp": 1518463543176
-}

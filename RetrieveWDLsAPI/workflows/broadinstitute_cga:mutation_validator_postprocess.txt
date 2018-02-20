@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity broadinstitute_cga/mutation_validator_postprocess/1 not found.",
-  "timestamp": 1518463385601
-}

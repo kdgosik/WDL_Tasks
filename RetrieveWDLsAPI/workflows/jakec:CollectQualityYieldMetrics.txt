@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity jakec/CollectQualityYieldMetrics/1 not found.",
-  "timestamp": 1518463543465
-}

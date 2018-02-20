@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity viral/assemble_denovo_with_deplete/1 not found.",
-  "timestamp": 1518463551791
-}

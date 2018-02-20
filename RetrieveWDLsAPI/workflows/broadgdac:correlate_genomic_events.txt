@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity broadgdac/correlate_genomic_events/1 not found.",
-  "timestamp": 1518463462139
-}

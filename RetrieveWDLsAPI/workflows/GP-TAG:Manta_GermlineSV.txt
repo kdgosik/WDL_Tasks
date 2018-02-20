@@ -1,5 +1,0 @@
-{
-  "code": 404,
-  "message": "Methods Repository entity GP-TAG/Manta_GermlineSV/1 not found.",
-  "timestamp": 1518463448101
-}
