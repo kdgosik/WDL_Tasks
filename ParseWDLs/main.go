@@ -11,7 +11,6 @@ func main() {
 	tool_urls := getToolsURL()
 	wf := getWorkflow(tool_urls[0])
 	w := workflowToSlice(wf)
-
 	s := strings.Join(w, " ")
 
 	// using regex to find task components
@@ -21,6 +20,10 @@ func main() {
 	output := findWDLComponent(s, `output {(.*?)}`)
 	meta := findWDLComponent(s, `meta {(.*?)}`)
 	runtime := findWDLComponent(s, `runtime {(.*?)}`)
+
+// needs work
+//	inputs := parseInputs(input)
+
 
 	fmt.Println("task: ", task)
 	fmt.Println("inputs: ", input)

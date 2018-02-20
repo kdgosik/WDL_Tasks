@@ -71,7 +71,7 @@
       "name": "GenotypeGVCFs",
       "inputs": ["/inputs/1", "/inputs/2", "/inputs/3", "/inputs/4", "/inputs/5", "/inputs/8"],
       "command": "java -jar ${GATK} -T GenotypeGVCFs -R ${RefFasta} -V ${sep=' -V ' GVCFs} -o ${sampleName}_rawVariants.vcf",
-      "output": "/inputs/9",
+      "output": "/inputs/11",
       "connections": []
     },
     {
@@ -80,7 +80,7 @@
       "inputs": ["/inputs/1", "/inputs/2", "/inputs/3", "/inputs/4", "/inputs/5", "/inputs/6", "/inputs/7"],
       "command": "java -jar ${GATK} -T HaplotypeCaller -R ${RefFasta} -I ${inputBAM} -o ${sampleName}.raw.indels.snps.vcf",
       "output": "/inputs/9",
-      "connections": ["/tasks/4", "/tasks/5", "/tasks/7"]
+      "connections": ["/tasks/4"]
     },
     {
       "id": 4,
@@ -91,15 +91,15 @@
       "connections": ["/tasks/6"]
     },
     {
-      "id": 6,
+      "id": 5,
       "name": "hardFilter",
       "inputs": ["/inputs/5", "/inputs/2", "/inputs/1", "/inputs/3", "/inputs/4", "/inputs/11"],
       "command": "java -jar ${GATK} -T VariantFiltration -R ${RefFasta} -V ${rawSNPs} --filterExpression 'FS > 60.0' --filterName 'snp_filter' -o ${sampleName}.filtered.snps.vcf",
-      "output": "/inputs/11",
-      "connections": ["/tasks/9"]
+      "output": "/inputs/6",
+      "connections": ["/tasks/6"]
     },
     {
-      "id": 9,
+      "id": 6,
       "name": "combine",
       "inputs": ["/inputs/1", "/inputs/2", "/inputs/3", "/inputs/4", "/inputs/5", "/inputs/11", "/inputs/11"],
       "command": "java -jar ${GATK} -T CombineVariants -R ${RefFasta} -V ${filteredSNPs} -V ${filteredIndels} --genotypemergeoption UNSORTED -o ${sampleName}.filtered.snps.indels.vcf",

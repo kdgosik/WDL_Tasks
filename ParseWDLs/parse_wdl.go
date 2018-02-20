@@ -6,20 +6,20 @@ import (
 )
 
 type Input struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-	Type string `json:"type"`
+	Id   				string    	`json:"id"`
+	Name 				string 			`json:"name"`
+	Type 				string 			`json:"type"`
 }
 
 type Task struct {
-	Id          int      `json:"id"`
-	Name        string   `json:"name"`
-	Inputs      []string `json:"inputs"`
-	Command     string   `json:"command"`
-	Output      string   `json:"output"`
-	Runtime     string   `json:"runtime"`
-	Meta        string   `json:"meta"`
-	Connections []string `json:"connections"`
+	Id          string      `json:"id"`
+	Name        string   		`json:"name"`
+	Inputs      []string 		`json:"inputs"`
+	Command     string   		`json:"command"`
+	Output      string   		`json:"output"`
+	Runtime     string   		`json:"runtime"`
+	Meta        string   		`json:"meta"`
+	Connections []string 		`json:"connections"`
 }
 
 // locate WDL Component
@@ -50,7 +50,7 @@ func parseInputs(input []string) [][]Input {
 		for k2, _ := range tmp {
 			input_obj := Input{}
 			if k2%2 == 0 {
-				input_obj.Id = rand.Int()
+				input_obj.Id = ""
 				input_obj.Name = tmp[k2+1]
 				input_obj.Type = tmp[k2]
 				input_slice = append(input_slice, input_obj)
