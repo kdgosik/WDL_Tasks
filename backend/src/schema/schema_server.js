@@ -18,6 +18,7 @@ function getByURL(relativeURL) {
     .then(res => res.data);
 }
 
+
 // Defining Input Type
 const InputType = new GraphQLObjectType({
   name:'Input',
@@ -51,6 +52,7 @@ const TaskType = new GraphQLObjectType({
 });
 
 
+// Defining tool type from Broad API firecloud
 const ToolsType = new GraphQLObjectType({
   name: 'Tools',
   fields:() => ({
@@ -72,6 +74,7 @@ const ToolsType = new GraphQLObjectType({
     verified: {type: GraphQLBoolean}
   })
 })
+
 
 // Root Query
 const query = new GraphQLObjectType({
@@ -112,6 +115,7 @@ const query = new GraphQLObjectType({
   }
 });
 
+
 // Mutations
 const mutation = new GraphQLObjectType({
   name: "Mutation",
@@ -130,12 +134,12 @@ const mutation = new GraphQLObjectType({
           input: args.input,
           command: args.command,
           output: args.output
-        })
-        .then(res => res.data);
+        }).then(res => res.data);
       }
     }
   }
 });
+
 
 module.exports = new GraphQLSchema({
   query,
