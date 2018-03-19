@@ -2,82 +2,112 @@ package main
 
 import (
 	"fmt"
-//	"strings"
-	"regexp"
-	"os"
-	//	"encoding/json"
+	cid "github.com/ipfs/go-cid"
+	mh "github.com/multiformats/go-multihash"
+	//  ipld "github.com/ipfs/go-ipld-format"
+	blocks "github.com/ipfs/go-block-format"
 )
+
+type WDL struct {
+  // id used in firecloud's api
+	Id     string `json:"id"`
+  // cid created from below
+	Hash   string `json:"hash"`
+  // actual wdl content (may not need / just use api)
+	Output string `json:"output"`
+}
+
+type Link struct {
+  // parent WDL id or hash
+	Parent    string `json:"parent"`
+  // child WDL id or hash
+	Child     string `json:"child"`
+  // Combined hash (concatenate then hash again)
+	Hash      string `json:"hash"`
+}
+
+
+// rough code structure
+func  HashWDL(id string) {
+
+  // using cid to create it from scratch
+  pref := cid.Prefix{
+    Version:  1,
+    Codec:    cid.Raw,
+    MhType:   mh.SHA2_256,
+    MhLength: -1, // default length
+  }
+
+  wdl := get("https://firecloud.api/" + id)
+
+  c, err := pref.Sum([]byte(wdl))
+  	if err != nil {
+  		fmt.Println(err)
+  	}
+
+  hash, _ := blocks.NewBlockWithCid([]byte(wdl), c)
+
+  out = WDL{
+    Id: id,
+    Hash: hash.Cid()
+  }
+
+  return out
+}
+
+
+func HashLink(parent string, child string) {
+  // using cid to create it from scratch
+  pref := cid.Prefix{
+    Version:  1,
+    Codec:    cid.Raw,
+    MhType:   mh.SHA2_256,
+    MhLength: -1, // default length
+  }
+
+  c, err := pref.Sum([]byte(parent + child))
+    if err != nil {
+      fmt.Println(err)
+    }
+
+  hash, _ := blocks.NewBlockWithCid([]byte(parent + child), c)
+
+  out = Link{
+    Parent: parent
+    Child: child,
+    Hash: hash.Cid()
+  }
+
+  return out
+}
 
 func main() {
 
-	tool_urls := getToolsURL()
-
-	for _, url := range tool_urls {
-		wf := getWorkflow(url)
-
-		reg, _ := regexp.Compile(`\:(.+?)\/`)
-		reg_result := reg.FindAllStringSubmatch(url, -1)
-		path := reg_result[1][1]
-
-		file, err := os.Create("RawWDLs/" + path + ".wdl")
-		if err != nil {
-			fmt.Println(err)
-		}
-		defer file.Close()
-
-		file.WriteString(wf)
-
+	// using cid to create it from scratch
+	pref := cid.Prefix{
+		Version:  1,
+		Codec:    cid.Raw,
+		MhType:   mh.SHA2_256,
+		MhLength: -1, // default length
 	}
 
-	/*
-	   	wf := getWorkflow(tool_urls[0])
-	   	w := workflowToSlice(wf)
-	   	s := strings.Join(w, " ")
+	// And then feed it some data
+	c, err := pref.Sum([]byte("Hello World!"))
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	fmt.Println("Created CID: ", c)
 
-	   	// using regex to find task components
-	   	task := findWDLComponent(s, `task (\w+)`)
-	   	input := findWDLComponent(s, `{(.*?) command `)
-	   	command := findWDLComponent(s, `command {(.*?)} (output|runtime|meta)`)
-	   	output := findWDLComponent(s, `output {(.*?)}`)
-	   	meta := findWDLComponent(s, `meta {(.*?)}`)
-	   	runtime := findWDLComponent(s, `runtime {(.*?)}`)
+	// using go-block-format to create block
+	out, _ := blocks.NewBlockWithCid([]byte("Hello World!"), c)
 
-	   // needs work
-	   //	inputs := parseInputs(input)
+	// now need to extend to a Node interface in ipld-format
+	fmt.Println(out)
+	fmt.Println(out.RawData())
+	fmt.Println(string(out.RawData()))
+	fmt.Println(out.Cid())
+	fmt.Println(out.String())
+	fmt.Println(out.Loggable())
 
-
-	   	fmt.Println("task: ", task)
-	   	fmt.Println("inputs: ", input)
-	   	fmt.Println("command: ", command)
-	   	fmt.Println("output: ", output)
-	   	fmt.Println("meta: ", meta)
-	   	fmt.Println("runtime: ", runtime)
-	*/
-
-	/*
-		inputs_out, err := json.Marshal(inputs)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println(string(inputs_out))
-
-		fmt.Println("--------------------------------")
-		fmt.Println("--------------------------------")
-		fmt.Println("--------------------------------")
-		// still need to incorpate a loop for multiple tasks in a workflow
-		out := Task{}
-		out.Id = rand.Int()
-		out.Name = task[0]
-		out.Inputs = input
-		out.Command = command[0]
-		out.Output = output[0]
-
-		out1, err := json.Marshal(out)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println(string(out1))
-
-	*/
 }
