@@ -10,8 +10,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"regexp"
-	"strings"
+	//"regexp"
+	//"strings"
 )
 
 // tool class struct of json object
@@ -51,6 +51,17 @@ type Tool struct {
 	Verified       bool
 }
 
+// WDL struct
+type WDL struct {
+	// id used in firecloud's api
+	Id string `json:"id"`
+	// version of the wdl
+	MetaVersion string `json:"version"`
+	// cid created from below
+	Hash string `json:"hash"`
+	// // actual wdl content (may not need / just use api)
+	// Output string `json:"output"`
+}
 
 // API call to firecloud to get all info on tools in firecloud
 func getToolsURL() []string {
@@ -97,7 +108,7 @@ func getToolsURL() []string {
 
 }
 
-
+/*
 // just get id from url
 func getID(tool_urls []string) []string {
 	var out []string
@@ -109,8 +120,16 @@ func getID(tool_urls []string) []string {
 
 	return out
 }
+*/
 
-
+// get id from wdl tool struct
+func getID(wdl_slice []WDL) []string {
+	var out []string
+	for _, v := range wdl_slice {
+		out = append(out, v.Id)
+	}
+	return out
+}
 
 // takes a url and returns a workflow as a string
 func getWorkflow(url string) string {
@@ -125,8 +144,18 @@ func getWorkflow(url string) string {
 		fmt.Println(err)
 	}
 	return string(body)
+
 }
 
+func make_urls(wdl_slice []WDL) []string {
+
+	var out []string
+	for _, val := range wdl_slice {
+		out = append(out, "https://api.firecloud.org/ga4gh/v1/tools/"+val.Id+"/versions/"+val.MetaVersion+"/plain-WDL/descriptor")
+	}
+
+	return out
+}
 
 // handler for data in go template
 func displayHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +164,19 @@ func displayHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln(err)
 	}
 
-	tool_urls := getToolsURL()
+	content, err := ioutil.ReadFile("../wdl_hash.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var wdl_slice []WDL
+	err = json.Unmarshal(content, &wdl_slice)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	tool_urls := make_urls(wdl_slice)
+	//tool_urls := getToolsURL()
 
 	// input data from the Form
 	data := struct {
@@ -146,8 +187,9 @@ func displayHandler(w http.ResponseWriter, r *http.Request) {
 		Host          string
 		ContentLength int64
 		Choice        []string
-		WDL           []string
+		WDL           string
 		Hash          string
+		HashFromFile  string
 	}{
 		r.Method,
 		r.URL,
@@ -155,32 +197,26 @@ func displayHandler(w http.ResponseWriter, r *http.Request) {
 		r.Header,
 		r.Host,
 		r.ContentLength,
-		getID(tool_urls),
-		[]string{""},
+		getID(wdl_slice), // getID(tool_urls),
+		"",
+		"",
 		"",
 	}
 
-
-
-
 	// check if there is any submission data
 	if len(data.Submissions) > 0 {
+		var out string
+		var jsonfilehash string
+		for i, tool := range wdl_slice {
+			//idx := strings.Index(tool, data.Submissions["wdl"][0])
 
-		// needs verified it is working properly
-			var out []string
-			for _, tool := range tool_urls {
-				idx := strings.Index(tool, data.Submissions["wdl"][0])
-
-				if idx > 0 {
-					out = append(out, getWorkflow(tool))
-				}
-
+			//if idx > 0 {
+			if tool.Id == data.Submissions["wdl"][0] {
+				jsonfilehash = tool.Hash
+				url := tool_urls[i]
+				out = getWorkflow(url)
 			}
-			
-		// put submission text into a slice of strings
-		//var out []string
-		for _, v := range data.Submissions {
-			out = append(out, v[0])
+
 		}
 
 		// Create a cid manually by specifying the 'prefix' parameters
@@ -192,7 +228,7 @@ func displayHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// And then feed it some data
-		c, err := pref.Sum([]byte(strings.Join(out, "")))
+		c, err := pref.Sum([]byte(out))
 		if err != nil {
 			log.Println(err)
 		}
@@ -202,6 +238,9 @@ func displayHandler(w http.ResponseWriter, r *http.Request) {
 
 		// assign the Output the CID as a string
 		data.Hash = c.String()
+
+		// checking the hash from the json file
+		data.HashFromFile = jsonfilehash
 	}
 
 	// execute template to update with Form data

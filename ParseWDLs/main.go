@@ -7,13 +7,17 @@ import (
 	//  ipld "github.com/ipfs/go-ipld-format"
 	blocks "github.com/ipfs/go-block-format"
 	"regexp"
+	"io/ioutil"
+	"encoding/json"
 )
 
 type WDL struct {
 	// id used in firecloud's api
-	Id   string `json:"id"`
+	Id       string `json:"id"`
+	// version of the wdl
+	MetaVersion  string `json:"version"`
 	// cid created from below
-	Hash string `json:"hash"`
+	Hash     string `json:"hash"`
 	// // actual wdl content (may not need / just use api)
 	// Output string `json:"output"`
 }
@@ -28,7 +32,7 @@ type Link struct {
 }
 
 // inputs WDL and returns a hash of the content
-func HashWDL(id string, wdl string) WDL {
+func HashWDL(id string, wdl_version string, wdl string) WDL {
 
 	// using cid to create it from scratch
 	pref := cid.Prefix{
@@ -50,6 +54,7 @@ func HashWDL(id string, wdl string) WDL {
 	// outputs as a WDL struct
 	out := WDL{
 		Id:   id,
+		Version: wdl_version,
 		Hash: hash.Cid().String(),
 	}
 
@@ -93,17 +98,31 @@ func main() {
 
 // loops through urls and returns a slice of WDL hashes
 	var wdl_hashes []WDL
-	for _, url := range tool_urls[:5] {
-		reg, _ := regexp.Compile(`https://api.firecloud.org/ga4gh/v1/tools/(.+?)/versions/`)
-		reg_result := reg.FindAllStringSubmatch(url, -1)
-		fmt.Println(reg_result)
-		id := reg_result[0][1]
+	for _, url := range tool_urls {
+		reg1, _ := regexp.Compile(`https://api.firecloud.org/ga4gh/v1/tools/(.+?)/versions/`)
+		reg1_result := reg1.FindAllStringSubmatch(url, -1)
+		fmt.Println(reg1_result)
+		reg2, _ := regexp.Compile(`https://api.firecloud.org/ga4gh/v1/tools/.*/versions/(.+?)`)
+		reg2_result := reg2.FindAllStringSubmatch(url, -1)
+		fmt.Println(reg2_result)
+
+		// assigning values
+		id := reg1_result[0][1]
+		wdl_version := reg2_result[0][1]
 		wf := getWorkflow(url)
 
-		wdl_hashes = append(wdl_hashes, HashWDL(id, wf))
+		wdl_hashes = append(wdl_hashes, HashWDL(id, wdl_version, wf))
 
 	}
 	fmt.Println(wdl_hashes)
+
+
+	wdlJson, _ := json.Marshal(wdl_hashes)
+	err := ioutil.WriteFile("wdl_hash.json", wdlJson, 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", wdl_hashes)
 
 
 // Example to be DELETED
