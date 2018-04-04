@@ -2,3 +2,4 @@ node_modules/
 frontend/node_modules
 ParseWDLs/jars
 ipfs-simple-explorer/node_modules
+simple-explorer/node_modules
