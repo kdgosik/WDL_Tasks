@@ -9,76 +9,79 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.css" />
   <link rel="stylesheet" href="style.css">
 </head>
+
   <body>
-    <div class="container">
-      <h1 class="brand"><span>Broad</span> WDL</h1>
-      <div class="wrapper">
-        <div class="company-info">
-          <h3>WDL Linking Form</h3>
-        </div>
-        <div class="contact">
-          <h3>Enter WDLs</h3>
-          <div class="alert">Your message has been sent</div>
 
+    <div class="wrapper">
+      <div class="box1" style="background:lightyellow">
+        <h3>Select First WDL</h3>
+        <select id="wdl1" name="wdl" form="wdl_data1">
+          <option></option>
+        </select>
 
+        <form id="wdl_data1">
+          <p>
+            <button type="submit">Submit</button>
+          </p>
+          <p class="full">
+            <textarea rows="10" cols="75" id="source1"></textarea>
+          </p>
+        </form>
+        <button id="store1">add to ipfs</button>
+        <h4>found in ipfs:</h4>
+        <textarea rows="2" cols="55" id="hash1">[ipfs hash]</textarea>
+        <!-- <textarea class="content" id="content1">[ipfs content]</textarea> -->
+      </div> <!-- <div class="box1"> -->
 
-    <h1>Add data to IPFS</h1>
+      <div class="box2" style="background:skyblue">
+        <h3>Select Second WDL</h3>
+        <select id="wdl2" name="wdl" form="wdl_data2">
+          <option></option>
+        </select>
 
-    <select id="wdl1" name="wdl" form="wdl_data1">
-      <option></option>
-    </select>
+        <form id="wdl_data2">
+          <p>
+            <button type="submit">Submit</button>
+          </p>
+          <p class="full">
+            <textarea rows="10" cols="75" id="source2"></textarea>
+          </p>
+        </form>
 
-  <form id="wdl_data1">
-    <p>
-      <button type="submit">Submit</button>
-    </p>
-    <p class="full">
-    <textarea id="source" rows=5></textarea>
-  </p>
-  </form>
-    <button id="store">add to ipfs</button>
-    <div>
-      <div>found in ipfs:</div>
-      <div class="content" id="hash">[ipfs hash]</div>
-      <div class="content" id="content">[ipfs content]</div>
-    </div>
+        <button id="store2">add to ipfs</button>
+        <h4>found in ipfs:</h4>
+        <textarea rows="2" cols="55" id="hash2">[ipfs hash]</textarea>
+        <!-- <textarea class="content" id="content2">[ipfs content]</textarea> -->
+      </div> <!-- <div class="box2"> -->
 
+      <div class="box3" style="background:lightgreen">
+        <h3>Linked Data</h3>
+        <button id="store3">Link Data</button>
+        <h4>found in ipfs:</h4>
+        <textarea rows="2" cols="55" id="hash3">[ipfs hash]</textarea>
+        <!-- <textarea class="content" id="content3">[ipfs content]</textarea> -->
+      </div> <!-- <div class="box3"> -->
 
-
-    <h1>Add data to IPFS</h1>
-
-    <select id="wdl2" name="wdl" form="wdl_data2">
-      <option></option>
-    </select>
-
-    <form id="wdl_data2">
-      <p>
-        <button type="submit">Submit</button>
-      </p>
-      <p class="full">
-        <textarea class="full" rows="5" cols="20" id="source1"></textarea>
-    </p>
-    </form>
-
-    <button id="store1">add to ipfs</button>
-    <div>
-      <div>found in ipfs:</div>
-      <div class="content" id="hash1">[ipfs hash]</div>
-      <div class="content" id="content1">[ipfs content]</div>
-    </div>
-    <h3>Linked Data</h3>
-    <button id="store2">Link Data</button>
-    <div>
-      <div>found in ipfs:</div>
-      <div class="content" id="hash2">[ipfs hash]</div>
-      <div class="content" id="content2">[ipfs content]</div>
-    </div>
-
-  </div>
-</div>
-</div>
-
+      <div class="box4" style="background:lightgreen">
+        <h3>Enter Linked Hash</h3>
+        <form id="display_link">
+          <p class="full">
+            <textarea rows="2" cols="55" id="linkhash"></textarea>
+          </p>
+          <p>
+            <button type="submit">Submit</button>
+          </p>
+        </form>
+        <h4>retrieved from ipfs:</h4>
+        <strong> WDL 1</strong>
+        <textarea rows="10" cols="75" id="outwdl1"></textarea>
+        <strong> WDL 2</strong>
+        <textarea rows="10" cols="75" id="outwdl2"></textarea>
+      </div> <!-- <div class="box4"> -->
+      <div class="alert">Your message has been sent</div>
+    </div> <!-- <div class="wrapper"> -->
 
 <script src="js/app.js"></script>
+
   </body>
 </html>
