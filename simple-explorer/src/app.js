@@ -5,6 +5,7 @@
 // make conditional statement to ping localhost:5001 for the API
 // if error then start one in the browser
 
+
 const IPFS = require('ipfs')
 
 const ipfs = new IPFS({
@@ -19,8 +20,6 @@ ipfs.once('ready', () => ipfs.id((err, info) => {
   console.log('IPFS node ready with address ' + info.id)
 }))
 
-
-
 /*
 var ipfsAPI = require('ipfs-api')
 
@@ -28,10 +27,20 @@ var ipfsAPI = require('ipfs-api')
 var ipfs = ipfsAPI('localhost', '5001', {protocol: 'http'}) // leaving out the arguments will default to these values
 */
 
+
 function store1 () {
+  var obj = {};
+  var id = document.getElementById("wdl1").value
   var toStore = document.getElementById('source1').value
 
-  ipfs.files.add(Buffer.from(toStore), (err, res) => {
+  obj["id"] = id;
+  obj["data"] = toStore;
+  console.log(obj.id)
+  console.log(obj.data)
+  console.log(JSON.stringify(obj))
+
+// add object to ipfs
+  ipfs.files.add(Buffer.from(JSON.stringify(obj)), (err, res) => {
     if (err || !res) {
       return console.error('ipfs add error', err, res)
     }
@@ -47,19 +56,28 @@ function store1 () {
 
 
 function display1 (hash) {
-  ipfs.files.cat(hash, (err, data) => {
+  ipfs.object.get(hash, (err, data) => {
     if (err) { return console.error('ipfs cat error', err) }
 
     document.getElementById('hash1').innerText = hash
-    document.getElementById('source1').innerText = data
+    // document.getElementById('source1').innerText = data.toJSON().data
   })
 }
 
 
 function store2 () {
+  var obj = {};
+  var id = document.getElementById("wdl2").value
   var toStore = document.getElementById('source2').value
 
-  ipfs.files.add(Buffer.from(toStore), (err, res) => {
+  obj["id"] = id;
+  obj["data"] = toStore;
+  console.log(obj.id)
+  console.log(obj.data)
+  console.log(JSON.stringify(obj))
+
+// add object to ipfs
+  ipfs.files.add(Buffer.from(JSON.stringify(obj)), (err, res) => {
     if (err || !res) {
       return console.error('ipfs add error', err, res)
     }
@@ -75,13 +93,14 @@ function store2 () {
 
 
 function display2 (hash) {
-  ipfs.files.cat(hash, (err, data) => {
+  ipfs.object.get(hash, (err, data) => {
     if (err) { return console.error('ipfs cat error', err) }
 
     document.getElementById('hash2').innerText = hash
-    document.getElementById('source2').innerText = data
+    // document.getElementById('source2').innerText = data.toJSON().data
   })
 }
+
 
 
 function store3 () {
@@ -92,7 +111,8 @@ function store3 () {
 
   ipfs.object.patch.addLink(hash1, {
       name:'link-to',
-      multihash: hash2
+      multihash: hash2,
+      size: 10
     }, (err, res) => {
       if (err || !res) {
         return console.error('ipfs object error', err, res)
