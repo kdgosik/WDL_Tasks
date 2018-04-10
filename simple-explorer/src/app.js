@@ -1,5 +1,5 @@
 'use strict'
-/*
+
 // this part creates its own ifps intance
 
 // make conditional statement to ping localhost:5001 for the API
@@ -18,13 +18,15 @@ ipfs.once('ready', () => ipfs.id((err, info) => {
   if (err) { throw err }
   console.log('IPFS node ready with address ' + info.id)
 }))
-*/
 
+
+
+/*
 var ipfsAPI = require('ipfs-api')
 
 // connect to ipfs daemon API server
 var ipfs = ipfsAPI('localhost', '5001', {protocol: 'http'}) // leaving out the arguments will default to these values
-
+*/
 
 function store1 () {
   var toStore = document.getElementById('source1').value
