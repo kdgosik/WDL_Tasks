@@ -1,41 +1,27 @@
-# WDL_Tasks
+## Clone
+
+```
+git cone https://github.com/kdgosik/WDL_Tasks
+cd WDL_Tasks/simple-explorer
+```
 
 ## Install
 
-Install the necessary node modules
-
 ```
-npm install --save
+npm install
 ```
 
-## Run Server
-
-We will need two terminals to run this.  There are two parts that need ports to run.  The first is a simple json server that creates a json database on localhost:3000.  To do this by the json-server package. The package.json file has a script to do this by typing the following command.
+## Compile
 
 ```
-cd backend
-npm run json:server
+npm run compile
 ```
 
-In a different terminal, we will start the graphiql server.  This will run on localhost:4000/graphql.  This will have the IDE provided called Graphiql.  The package.json file has a script to run this as well by using the following command.
+
+## Run App
+
+This will start the app on [localhost:8888](http://localhost:8888)
 
 ```
-npm run dev:server
-```
-
-Navigate to <a href="http://localhost:4000/graphql">http://localhost:4000/graphql</a> where you can execute queries.  Here is an example one to get started.
-
-```
-{
-  task(id: "3"){
-    id
-    name
-    input
-    output
-    connections{
-      id
-      name
-    }
-  }
-}
+npm run start
 ```
