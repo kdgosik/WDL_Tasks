@@ -25,8 +25,12 @@ npm run compile
 
 ## Run App
 
-This will start the app on <a href="http://localhost:8888" target="_blank">localhost:8888</a>
+This will start the app on <a href="http://localhost:12345" target="_blank">localhost:12345s</a>
 
 ```
 npm run start
 ```
+
+## Walk Through
+
+Please check out the jupyter notebook __IPFS_Walkthrough.ipynb__ for more information about IPFS and how to use the app.  
