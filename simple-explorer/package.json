@@ -4,7 +4,7 @@
   "description": "ipfs explorer",
   "main": "index.js",
   "scripts": {
-    "start": "http-server -c-1 -p 8888 public",
+    "start": "http-server -c-1 -p 12345 public",
     "compile": "browserify src/app.js -o public/js/app.js -d"
   },
   "author": "Kirk Gosik",
