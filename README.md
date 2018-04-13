@@ -25,7 +25,7 @@ npm run compile
 
 ## Run App
 
-This will start the app on <a href="http://localhost:12345" target="_blank">localhost:12345s</a>
+This will start the app on <a href="http://localhost:12345" target="_blank">localhost:12345</a>
 
 ```
 npm run start
